@@ -8,10 +8,9 @@ namespace Forward
 {
     public class Rule
     {
-        public bool used = false;
+        public State used = State.Open;
         public char product;
         public List<char> recipe = new List<char>();
-
         public override string ToString()
         {
             string s = "";
@@ -21,5 +20,8 @@ namespace Forward
             }
             return s += $"'{product}'";
         }
+    }public enum State
+    {
+        Open, Used, Cons
     }
 }

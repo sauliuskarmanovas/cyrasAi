@@ -68,12 +68,15 @@ namespace Forward
 
         private static void SolveForward(List<Rule> rules, List<char> facts, char goal)
         {
-            rules.ForEach(r => r.used = false);
+            rules.ForEach(r => r.used = State.Open);
 
             var startingFacts = facts;
             facts = new List<char>(facts);
+            int iter = 0;
+            List<Rule> path = new List<Rule>();
             while (!facts.Contains(goal))
             {
+                Console.WriteLine($"{++iter} ITERACIJA");
                 if (rules.Count == 0)
                 {
                     Console.WriteLine("Goal is unreachable");
@@ -84,32 +87,55 @@ namespace Forward
                 for (; index < rules.Count; index++)
                 {
                     Rule rule = rules[index];
-                    if (rule.used)
+                    if (rule.used != State.Open)
+                    {
+                        Console.WriteLine($"\tR{rules.IndexOf(rule)+1}:{rule} praleidžiama, nes pekelta flag{(int) rule.used}");
                         continue;
+                    }
                     if (facts.Contains(rule.product))
                     {
-                        rule.used = true;
+                        rule.used = State.Cons;
+                        Console.WriteLine($"\tR{rules.IndexOf(rule) + 1}:{rule} netaikoma, nes konsekventas faktuose. Pakeliama flag{(int)rule.used} ");
+                        continue;
                     }
                     if (rule.recipe.All(i => facts.Contains(i)))
                     {
                         facts.Add(rule.product);
-                        Console.WriteLine($"Added fact '{rule.product}' By using rule {rule.ToString()}");
-                        rule.used = true;
+                        path.Add(rule);
+                        rule.used = State.Used;
+                        Console.Write($"\tR{rules.IndexOf(rule) + 1}:{rule} taikoma, Pakeliama flag{(int)rule.used} ");
+                        startingFacts.ToList().ForEach(r => Console.Write($"{r} "));
+                        Console.Write("ir ");
+
+                        facts.Where(r => !startingFacts.Contains(r)).ToList().ForEach(r => Console.Write($"{r} "));
+                        Console.WriteLine();
+
+
                         break;
+                    }
+                    else
+                    {
+                        Console.Write($"\tR{rules.IndexOf(rule) + 1}:{rule} netaikoma, nes trūksta ");
+                        rule.recipe.Where(r => !facts.Contains(r)).ToList().ForEach(r => Console.Write($"{r} "));
+                        Console.WriteLine();
                     }
                 }
                 if (index == count)
                 {
-                    Console.WriteLine("Goal is unreachable, none of the rules moved forward");
+                    Console.WriteLine("Tikslas nepasiekiamas");
                     return;
                 }
             }
-            Console.WriteLine($"Goal {goal} was reached");
+            Console.WriteLine($"Tikslas {goal} gautas");
+            Console.Write($"Kelias ");
+            path.ForEach(p => Console.Write($"R{rules.IndexOf(p)+1} "));
+            Console.WriteLine();
+
         }
 
         private static void SolveBackward(List<Rule> rules, List<char> facts, char goal)
         {
-            rules.ForEach(r => r.used = false);
+            rules.ForEach(r => r.used = State.Open);
             var startingFacts = facts;
             facts = new List<char>(facts);
             Stack<char> goalStack = new Stack<char>();
@@ -123,7 +149,7 @@ namespace Forward
                     if (rule.product == currentgoal)
                     {
                         rule.recipe.ForEach(a => goalStack.Push(a));
-                        rule.used = true;
+                        rule.used = State.Used;
                         break;
                     }
 
