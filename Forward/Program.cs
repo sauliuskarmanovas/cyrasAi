@@ -11,6 +11,19 @@ namespace Forward
         static void Main(string[] args)
         {
             List<Rule> rules = new List<Rule>{
+                new Rule {product = 'Z', recipe = new List<char>{'X','Y'}},
+                new Rule {product = 'X', recipe = new List<char>{'A'}},
+                new Rule {product = 'Y', recipe = new List<char>{'A'}},
+                new Rule {product = 'A', recipe = new List<char>{'B'}},
+            };
+            List<char> facts = new List<char>("BC".ToList());
+            char goal = 'Z';
+            SolveForward(rules, facts, goal);
+            Console.ReadKey(true);
+            SolveBackward(rules, facts, goal);
+            Console.ReadKey(true);
+            return;
+            rules = new List<Rule>{
                 new Rule {product = 'L',recipe = new List<char>{'A'}},
                 new Rule {product = 'K',recipe = new List<char>{'L'}},
                 new Rule {product = 'A',recipe = new List<char>{'D'}},
@@ -19,8 +32,8 @@ namespace Forward
                 new Rule {product = 'F',recipe = new List<char>{'C','D'}},
                 new Rule {product = 'D',recipe = new List<char>{'A'}},
             };
-            List<char> facts = new List<char>("ABC".ToList());
-            char goal = 'Z';
+            facts = new List<char>("ABC".ToList());
+            goal = 'Z';
             SolveForward(rules, facts, goal);
             Console.ReadKey(true);
             SolveBackward(rules, facts, goal);
@@ -79,7 +92,7 @@ namespace Forward
                 Console.WriteLine($"{++iter} ITERACIJA");
                 if (rules.Count == 0)
                 {
-                    Console.WriteLine("Goal is unreachable");
+                    Console.WriteLine("Tikslas nepasiekiamas");
                     return;
                 }
                 int index = 0;
@@ -142,77 +155,118 @@ namespace Forward
             ruleState.Push(new List<Rule>());
             Stack<List<char>> goalState = new Stack<List<char>>();
             goalState.Push(new List<char> { goal });
+            Stack<Rule> ruleStack = new Stack<Rule>();
+            Stack<int> ruledepthStack = new Stack<int>();
+            foreach(var r in rules.AsEnumerable().Reverse())
+            {
+                ruledepthStack.Push(0);
+                ruleStack.Push(r);
+            }
             var currentRuleState = ruleState.Pop();
             var currentGoalState = goalState.Pop();
             try
             {
                 while (currentGoalState.Count != 0)
                 {
+                    //Console.ReadKey(true);
+                    var currentRule = ruleStack.Pop();
+                    var currentRuleDepth = ruledepthStack.Pop();
                     var newruleState = new List<List<Rule>>();
                     var newgoalState = new List<List<char>>();
-                    foreach (var rule in rules)
+                    if (currentRuleState.Contains(currentRule))
                     {
-                        if (currentRuleState.Contains(rule))
+                        for (int i = 0; i < currentRuleDepth; i++)
+                            Console.Write($" ");
+                        Console.WriteLine($"Skipping R{rules.IndexOf(currentRule) + 1}. Already used.");
+                        continue;
+                    }
+                    else
+                    {
+                        if (!currentGoalState.Contains(currentRule.product))
                         {
-                            for (int i = 0; i < currentRuleState.Count; i++)
+                            for (int i = 0; i < currentRuleDepth; i++)
                                 Console.Write($" ");
-                            Console.WriteLine($"Skipping R{rules.IndexOf(rule)+1}. Already used.");
+                            Console.WriteLine($"Skipping R{rules.IndexOf(currentRule) + 1}. Goals don't contain rule product.");
+                            
                         }
                         else
                         {
-                            if (!currentGoalState.Contains(rule.product))
+                            if (currentRule.recipe.All(r => facts.Contains(r) || currentGoalState.Contains(r)))
                             {
-                                for (int i = 0; i < currentRuleState.Count; i++)
+                                //closed end
+                                for (int i = 0; i < currentRuleDepth; i++)
                                     Console.Write($" ");
-                                Console.WriteLine($"Skipping R{rules.IndexOf(rule) + 1}. Goals don't contain rule product.");
+                                Console.WriteLine($"Using R{rules.IndexOf(currentRule) + 1}. No new goals.");
+                                currentRule.recipe.ForEach(r=>currentGoalState.Remove(r));
                             }
                             else
                             {
+                                for (int i = 0; i < currentRuleDepth; i++)
+                                    Console.Write($" ");
+                                Console.Write($"Using R{rules.IndexOf(currentRule) + 1}. Adding goals: ");
+                                foreach (var rec in currentRule.recipe.Where(r => !facts.Contains(r)))
+                                {
+                                    Console.Write($"{rec} ");
+                                }
+                                Console.WriteLine();
+                                currentRule.recipe.ForEach(r => currentGoalState.Remove(r));
+                                
+                            }
+                            if (currentGoalState.Count == 0)
+                                break;
+
+                            foreach (var rule in rules.AsEnumerable().Reverse())
+                            {
+                                var newGoalState = new List<char>(currentGoalState);
+                                ruleStack.Push(rule);
+                                ruledepthStack.Push(currentRuleDepth + 1);
                                 var addGoal = new List<char>(currentGoalState);
                                 var addRule = new List<Rule>(currentRuleState);
-                                addGoal.Remove(rule.product);
-                                if (rule.recipe.All(r => facts.Contains(r)))
+                                addGoal.Remove(currentRule.product);
+                                addRule.Add(rule);
+                                if (currentRule.recipe.All(r => facts.Contains(r) || addGoal.Contains(r)))
                                 {
                                     //closed end
-                                    for (int i = 0; i < currentRuleState.Count; i++)
-                                        Console.Write($" ");
-                                    Console.WriteLine($"Using R{rules.IndexOf(rule) + 1}. No new goals.");
                                 }
                                 else
                                 {
-                                    addRule.Add(rule);
-                                    for (int i = 0; i < currentRuleState.Count; i++)
-                                        Console.Write($" ");
-                                    Console.Write($"Using R{rules.IndexOf(rule) + 1}. Adding goals: ");
-                                    foreach (var rec in rule.recipe.Where(r => !facts.Contains(r)))
+                                    addRule.Add(currentRule);
+                                    foreach (var rec in currentRule.recipe.Where(r => !facts.Contains(r) && !addGoal.Contains(r)))
                                     {
                                         addGoal.Add(rec);
-                                        Console.Write($"{rec} ");
                                     }
-                                    Console.WriteLine();
+                                    goalState.Push(addGoal);
+                                    newruleState.Add(addRule);
                                 }
-                                newruleState.Add(addRule);
-                                newgoalState.Add(addGoal);
                             }
+                            foreach (var r in newruleState.AsEnumerable())
+                                ruleState.Push(r);
                         }
                     }
-                    foreach (var r in newruleState.AsEnumerable().Reverse())
-                        ruleState.Push(r);
-                    foreach (var g in newgoalState.AsEnumerable().Reverse())
-                        goalState.Push(g);
 
+
+                
                     currentRuleState = ruleState.Pop();
                     currentGoalState = goalState.Pop();
                 }
             } catch (InvalidOperationException)
             {
                 Console.WriteLine("Goal is unreachable, none of the rules moved forward");
-
+                return;
             }
             Console.Write($"Goal '{goal}' reached.");
             foreach (var r in currentRuleState)
                 Console.Write($" R{rules.IndexOf(r) + 1}");
             Console.WriteLine();
+        }
+        public static string toS(List<char> a)
+        {
+            String s = "";
+            for (int i = 0; i < a.Count; i++)
+            {
+                s+=a[i];
+            }
+            return s;
         }
     }
 }
