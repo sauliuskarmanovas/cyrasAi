@@ -11,29 +11,31 @@ namespace Forward
         static void Main(string[] args)
         {
             List<Rule> rules = new List<Rule>{
-                new Rule {product = 'Z', recipe = new List<char>{'X','Y'}},
-                new Rule {product = 'X', recipe = new List<char>{'A'}},
-                new Rule {product = 'Y', recipe = new List<char>{'A'}},
-                new Rule {product = 'A', recipe = new List<char>{'B'}},
-            };
-            List<char> facts = new List<char>("BC".ToList());
-            char goal = 'Z';
-            SolveForward(rules, facts, goal);
-            Console.ReadKey(true);
-            SolveBackward(rules, facts, goal);
-            Console.ReadKey(true);
-            return;
+                    new Rule {product = 'Z', recipe = new List<char>{'X','Y'}},
+                    new Rule {product = 'A', recipe = new List<char>{'B'}},
+                    new Rule {product = 'X', recipe = new List<char>{'A'}},
+                    new Rule {product = 'Y', recipe = new List<char>{'A'}},
+                };
+                List<char> facts = new List<char>("BC".ToList());
+                char goal = 'Z';
+            //return;
             rules = new List<Rule>{
-                new Rule {product = 'L',recipe = new List<char>{'A'}},
-                new Rule {product = 'K',recipe = new List<char>{'L'}},
-                new Rule {product = 'A',recipe = new List<char>{'D'}},
-                new Rule {product = 'M',recipe = new List<char>{'D'}},
-                new Rule {product = 'Z',recipe = new List<char>{'F','B'}},
-                new Rule {product = 'F',recipe = new List<char>{'C','D'}},
-                new Rule {product = 'D',recipe = new List<char>{'A'}},
+                new Rule {product = 'Z',recipe = new List<char>{'B'}},
+                new Rule {product = 'B',recipe = new List<char>{'C'}},
+                new Rule {product = 'C',recipe = new List<char>{'Z'}},
+                new Rule {product = 'Z',recipe = new List<char>{'A'}},
             };
-            facts = new List<char>("ABC".ToList());
+            facts = new List<char>("A".ToList());
             goal = 'Z';
+            while (true)
+            {
+                
+                //SolveForward(rules, facts, goal);
+                //Console.ReadKey(true);
+                SolveBackward(rules, facts, goal);
+                Console.ReadKey(true);
+
+            }
             SolveForward(rules, facts, goal);
             Console.ReadKey(true);
             SolveBackward(rules, facts, goal);
@@ -154,7 +156,9 @@ namespace Forward
             Stack<List<Rule>> ruleState = new Stack<List<Rule>>();
             ruleState.Push(new List<Rule>());
             Stack<List<char>> goalState = new Stack<List<char>>();
+            Stack<List<char>> goalsReachedState = new Stack<List<char>>();
             goalState.Push(new List<char> { goal });
+            goalsReachedState.Push(new List<char>());
             Stack<Rule> ruleStack = new Stack<Rule>();
             Stack<int> ruledepthStack = new Stack<int>();
             foreach(var r in rules.AsEnumerable().Reverse())
@@ -164,11 +168,12 @@ namespace Forward
             }
             var currentRuleState = ruleState.Pop();
             var currentGoalState = goalState.Pop();
+            var currentgoalsReachedState = goalsReachedState.Pop();
             try
             {
                 while (currentGoalState.Count != 0)
                 {
-                    //Console.ReadKey(true);
+                    Console.ReadKey(true);
                     var currentRule = ruleStack.Pop();
                     var currentRuleDepth = ruledepthStack.Pop();
                     var newruleState = new List<List<Rule>>();
@@ -187,7 +192,6 @@ namespace Forward
                             for (int i = 0; i < currentRuleDepth; i++)
                                 Console.Write($" ");
                             Console.WriteLine($"Skipping R{rules.IndexOf(currentRule) + 1}. Goals don't contain rule product.");
-                            
                         }
                         else
                         {
@@ -197,19 +201,30 @@ namespace Forward
                                 for (int i = 0; i < currentRuleDepth; i++)
                                     Console.Write($" ");
                                 Console.WriteLine($"Using R{rules.IndexOf(currentRule) + 1}. No new goals.");
-                                currentRule.recipe.ForEach(r=>currentGoalState.Remove(r));
+                                //currentRule.recipe.ForEach(r=>currentGoalState.Remove(r));
+                                currentRuleState.Add(currentRule);
+                                currentGoalState.Remove(currentRule.product);
+                                currentgoalsReachedState.Add(currentRule.product);
                             }
                             else
                             {
                                 for (int i = 0; i < currentRuleDepth; i++)
                                     Console.Write($" ");
+                                if (currentRule.recipe.Any(r => currentgoalsReachedState.Contains(r)))
+                                {
+                                    Console.WriteLine($"Skipping R{rules.IndexOf(currentRule) + 1} Cycle");
+                                    continue;
+                                }
                                 Console.Write($"Using R{rules.IndexOf(currentRule) + 1}. Adding goals: ");
                                 foreach (var rec in currentRule.recipe.Where(r => !facts.Contains(r)))
                                 {
+                                    currentGoalState.Add(rec);
                                     Console.Write($"{rec} ");
                                 }
-                                Console.WriteLine();
-                                currentRule.recipe.ForEach(r => currentGoalState.Remove(r));
+                                currentRuleState.Add(currentRule);
+                                currentGoalState.Remove(currentRule.product);
+                                currentgoalsReachedState.Add(currentRule.product);
+                                Console.WriteLine(" Goals: " + toS(currentGoalState));
                                 
                             }
                             if (currentGoalState.Count == 0)
@@ -217,30 +232,20 @@ namespace Forward
 
                             foreach (var rule in rules.AsEnumerable().Reverse())
                             {
+                                var newRuleState = new List<Rule>(currentRuleState);
+                                
+                                ruleState.Push(newRuleState);
+                                var newGoalsReachedState = new List<char>(currentgoalsReachedState);
                                 var newGoalState = new List<char>(currentGoalState);
-                                ruleStack.Push(rule);
+                                //foreach (var r in rule.recipe)
+                                //{
+                                //    newGoalState.Add(r);
+                                //}
+                                goalState.Push(newGoalState);
+                                goalsReachedState.Push(newGoalsReachedState);
                                 ruledepthStack.Push(currentRuleDepth + 1);
-                                var addGoal = new List<char>(currentGoalState);
-                                var addRule = new List<Rule>(currentRuleState);
-                                addGoal.Remove(currentRule.product);
-                                addRule.Add(rule);
-                                if (currentRule.recipe.All(r => facts.Contains(r) || addGoal.Contains(r)))
-                                {
-                                    //closed end
-                                }
-                                else
-                                {
-                                    addRule.Add(currentRule);
-                                    foreach (var rec in currentRule.recipe.Where(r => !facts.Contains(r) && !addGoal.Contains(r)))
-                                    {
-                                        addGoal.Add(rec);
-                                    }
-                                    goalState.Push(addGoal);
-                                    newruleState.Add(addRule);
-                                }
+                                ruleStack.Push(rule);
                             }
-                            foreach (var r in newruleState.AsEnumerable())
-                                ruleState.Push(r);
                         }
                     }
 
