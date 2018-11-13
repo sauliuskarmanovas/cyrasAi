@@ -21,12 +21,13 @@ namespace Forward
             };
             List<char> facts = new List<char>("ABC".ToList());
             char goal = 'Z';
-            SolveForward(rules, facts, goal);
-            Console.ReadKey(true);
-            SolveBackward(rules, facts, goal);
-            Console.ReadKey(true);
+            //SolveForward(rules, facts, goal);
+            //Console.ReadKey(true);
+            //SolveBackward(rules, facts, goal);
+            //Console.ReadKey(true);
 
             rules = new List<Rule>{
+               // new Rule { product = 'Z', recipe= new List<char>{ 'Z'} },
                 new Rule {product = 'Z',recipe = new List<char>{'D', 'C'}},
                 new Rule {product = 'D',recipe = new List<char>{'C'}},
                 new Rule {product = 'C',recipe = new List<char>{'B'}},
@@ -39,11 +40,22 @@ namespace Forward
             };
             facts = new List<char>("T".ToList());
             goal = 'Z';
+            SolveBackward1(rules, facts, goal);
+            Console.ReadKey(true);
+
+            rules = new List<Rule>{
+                new Rule {product = 'Z',recipe = new List<char>{'D', 'C'}},
+                new Rule {product = 'C',recipe = new List<char>{'T'}},
+                new Rule {product = 'Z',recipe = new List<char>{'T'}},
+            };
+            facts = new List<char>("T".ToList());
+            goal = 'Z';
             SolveForward(rules, facts, goal);
             Console.ReadKey(true);
             SolveBackward(rules, facts, goal);
             Console.ReadKey(true);
-
+            SolveBackward1(rules, facts, goal);
+            Console.ReadKey(true);
             //rules = new List<Rule>{
             //    new Rule {product = 'Z',recipe = new List<char>{'D'}},
             //    new Rule {product = 'D',recipe = new List<char>{'C'}},
@@ -135,6 +147,7 @@ namespace Forward
 
         private static void SolveBackward(List<Rule> rules, List<char> facts, char goal)
         {
+            Stack<string> messages = new Stack<string>();
             rules.ForEach(r => r.used = State.Open);
             var startingFacts = facts;
             facts = new List<char>(facts);
@@ -214,5 +227,88 @@ namespace Forward
                 Console.Write($" R{rules.IndexOf(r) + 1}");
             Console.WriteLine();
         }
+
+        private static void SolveBackward1(List<Rule> rules, List<char> facts, char goal)
+        {
+            string f = "";
+            foreach (var ff in facts)
+            {
+                f += ff;
+            }
+            Stack<Tuple<int,//next rule number
+                string,//goals
+                string,//completedGoals
+                List<Rule>//rules used
+                ,string//completed facts
+                >> stack = new Stack<Tuple<int, string, string, List<Rule>,string>>();
+            stack.Push(new Tuple<int, string, string, List<Rule>,string>(0, $"{goal}", f, new List<Rule>(),f));
+            Tuple<int, string, string, List<Rule>,string> state;
+            state = stack.Pop();
+            try{ while (true)
+            {
+                foreach (var s in stack)
+                {
+                    Console.Write(" ");
+                }
+                Console.Write($"R{ state.Item1 + 1} ");
+                var rule = rules[state.Item1];
+                if (state.Item1 < rules.Count - 1)
+                {
+                    stack.Push(incCopy(state));
+                }
+
+
+                if (isValid(rule, state))
+                {
+                    Console.Write("using");
+
+                    var newState = apply(rule, state);
+
+                    state = newState;
+
+                    stack.Push(newState);
+                }
+                else
+                {
+                    Console.Write("skipping");
+                }
+
+                Console.Write($" Goals: {state.Item2} Completed: {state.Item5} Rules:");
+                foreach (var item in state.Item4)
+                {
+                    Console.Write($"R{rules.IndexOf(item) + 1} ");
+                }
+                Console.WriteLine("\t\t"+rule);
+                if (state.Item2 == "")
+                    break;
+                state = stack.Pop();
+            } }
+            catch (InvalidOperationException)
+            {
+                Console.WriteLine("Goal is unreachable");
+            }
+        }
+
+        private static Tuple<int, string, string, List<Rule>,string> incCopy(Tuple<int, string, string, List<Rule>,string> state)
+        {
+            return new Tuple<int, string, string, List<Rule>, string>(state.Item1 + 1, state.Item2, state.Item3, new List<Rule>(state.Item4), state.Item5);
+        }
+        private static Tuple<int, string, string, List<Rule>, string> apply(Rule rule, Tuple<int, string, string, List<Rule>, string> state)
+        {
+            var completedGoals = state.Item3;// + rule.product;
+            var goals = state.Item2.Replace("" + rule.product, "");
+            foreach (var r in rule.recipe.Where(r=> !completedGoals.Contains(r)))
+            {
+                goals += r;
+            }
+            var rules = new List<Rule>(state.Item4);rules.Add(rule);
+            return new Tuple<int, string, string, List<Rule>, string>(0,goals, completedGoals, rules, state.Item5+rule.product);
+        }
+
+        private static bool isValid(Rule rule, Tuple<int, string, string, List<Rule>, string> state)
+        {
+            return state.Item2.Contains(rule.product) && !state.Item4.Contains(rule) && !state.Item4.Contains(rule);// && !state.Item3.Contains(rule.product);
+        }
     }
+
 }

@@ -5,3 +5,10 @@ C:\Saulius\Programavimas\7sem\AI\Forward\Forward\obj\Debug\Forward.csprojAssembl
 C:\Saulius\Programavimas\7sem\AI\Forward\Forward\obj\Debug\Forward.csproj.CoreCompileInputs.cache
 C:\Saulius\Programavimas\7sem\AI\Forward\Forward\obj\Debug\Forward.exe
 C:\Saulius\Programavimas\7sem\AI\Forward\Forward\obj\Debug\Forward.pdb
+C:\Saulius\Programavimas\7sem\AiForw\Forward\bin\Debug\Forward.exe.config
+C:\Saulius\Programavimas\7sem\AiForw\Forward\bin\Debug\Forward.exe
+C:\Saulius\Programavimas\7sem\AiForw\Forward\bin\Debug\Forward.pdb
+C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.csprojAssemblyReference.cache
+C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.csproj.CoreCompileInputs.cache
+C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.exe
+C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.pdb
