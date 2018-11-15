@@ -3,79 +3,109 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Drawing;
+using System.IO;
+
 
 namespace Forward
 {
     class Program
     {
+        static StreamWriter wr;
+        static Dictionary<char,int> goalsNodeId;
+        static Dictionary<int,int> rulesNodeId;
+
+        static List<int> pa = new List<int>();
         static void Main(string[] args)
         {
-            List<Rule> rules = new List<Rule>{
-                new Rule {product = 'L',recipe = new List<char>{'A'}},
-                new Rule {product = 'K',recipe = new List<char>{'L'}},
-                new Rule {product = 'A',recipe = new List<char>{'D'}},
-                new Rule {product = 'M',recipe = new List<char>{'D'}},
-                new Rule {product = 'Z',recipe = new List<char>{'F','B'}},
-                new Rule {product = 'F',recipe = new List<char>{'C','D'}},
-                new Rule {product = 'D',recipe = new List<char>{'A'}},
-            };
-            List<char> facts = new List<char>("ABC".ToList());
-            char goal = 'Z';
-            //SolveForward(rules, facts, goal);
-            //Console.ReadKey(true);
-            //SolveBackward(rules, facts, goal);
-            //Console.ReadKey(true);
+            Console.WriteLine("Enter file name:");
+            List<Rule> rules = new List<Rule>();
+            List<char> facts; 
+            char goal;
 
-            rules = new List<Rule>{
-               // new Rule { product = 'Z', recipe= new List<char>{ 'Z'} },
-                new Rule {product = 'Z',recipe = new List<char>{'D', 'C'}},
-                new Rule {product = 'D',recipe = new List<char>{'C'}},
-                new Rule {product = 'C',recipe = new List<char>{'B'}},
-                new Rule {product = 'B',recipe = new List<char>{'A'}},
-                new Rule {product = 'A',recipe = new List<char>{'D'}},
-                new Rule {product = 'D',recipe = new List<char>{'T'}},
-                new Rule {product = 'A',recipe = new List<char>{'G'}},
-                new Rule {product = 'B',recipe = new List<char>{'H'}},
-                new Rule {product = 'C',recipe = new List<char>{'J'}},
-            };
-            facts = new List<char>("T".ToList());
-            goal = 'Z';
-            SolveBackward1(rules, facts, goal);
-            Console.ReadKey(true);
+            using (var reader = new StreamReader(Console.ReadLine())) 
+            {
+                try
+                {
+                    goal = reader.ReadLine()[0];
+                    facts = new List<char>(reader.ReadLine());
+                    while (!reader.EndOfStream)
+                    {
+                        var c = reader.ReadLine().Split(' ');
+                        if(c.Count() != 2)
+                        {
+                            Console.WriteLine("Invalid rule format");
+                            return;
+                        }
+                        rules.Add(new Rule { product = c.Last()[0], recipe = new List<char>(c.First()) });
+                    }
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Error reading the file");
+                    return;
+                }
+            }
 
-            rules = new List<Rule>{
-                new Rule {product = 'Z',recipe = new List<char>{'D', 'C'}},
-                new Rule {product = 'C',recipe = new List<char>{'T'}},
-                new Rule {product = 'Z',recipe = new List<char>{'T'}},
-            };
-            facts = new List<char>("T".ToList());
-            goal = 'Z';
+            Console.WriteLine($"Tikslas: {goal}");
+
+            Console.WriteLine($"Faktai: ");
+            facts.ForEach(p => Console.Write($"{p} "));
+            Console.WriteLine();
+
+            Console.WriteLine($"Taisyklės: ");
+
+            rules.ForEach(p => Console.WriteLine($"\tR{rules.IndexOf(p)+1}:\t {p}"));
+            Console.WriteLine();
+
             SolveForward(rules, facts, goal);
-            Console.ReadKey(true);
-            SolveBackward(rules, facts, goal);
-            Console.ReadKey(true);
-            SolveBackward1(rules, facts, goal);
-            Console.ReadKey(true);
-            //rules = new List<Rule>{
-            //    new Rule {product = 'Z',recipe = new List<char>{'D'}},
-            //    new Rule {product = 'D',recipe = new List<char>{'C'}},
-            //    new Rule {product = 'C',recipe = new List<char>{'B'}},
-            //    new Rule {product = 'B',recipe = new List<char>{'A'}},
-            //    new Rule {product = 'G',recipe = new List<char>{'A'}},
-            //    new Rule {product = 'Z',recipe = new List<char>{'G'}},
-            //};
-            //facts = new List<char>("A".ToList());
-            //goal = 'Z';
-            //SolveForward(rules, facts, goal);
+            Console.WriteLine();
+            Console.WriteLine();
+
+            goalsNodeId = new Dictionary<char, int>();
+            rules.ForEach(r => { goalsNodeId[r.product] = 0; r.recipe.ForEach(rr => goalsNodeId[rr] = 0); });
+            goalsNodeId[goal]= 0;
+            facts.ForEach(r => goalsNodeId[r] = 0);
+
+            rulesNodeId = new Dictionary<int, int>();
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                rulesNodeId[i]= 0;
+            }
+
+            using (wr = new StreamWriter("gr.txt"))
+            {
+                wr.Write(@"digraph a{");
+                if(Prove(rules, facts, goal))
+                {
+                    Console.WriteLine("Goal was proved");
+                    Console.Write($"Rules: ");
+                    pa.ForEach(p => Console.Write($"R{p} "));
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.WriteLine("Goal can't be proved");
+                }
+                wr.Write(@"}");
+
+            }
             //Console.ReadKey(true);
 
+            System.Diagnostics.Process.Start("dot", $@"-Tpng ""{Directory.GetCurrentDirectory()}\gr.txt"" -o ""{Directory.GetCurrentDirectory()}\gr.png""");
 
-            //rules = new List<Rule>{
-            //};
-            //facts = new List<char>("A".ToList());
-            //goal = 'A';
-            //SolveForward(rules, facts, goal);
-            //Console.ReadKey(true);
+            System.Threading.Thread.Sleep(1000);
+            var pic = new PictureBox() { ImageLocation = @"gr.png", Dock = DockStyle.Fill };
+            var f = new Form() { };
+            pic.Load();
+            f.Controls.Add(pic);
+            f.Width = pic.Image.Width + 50; f.Height = pic.Image.Height + 50;
+            
+            f.ShowDialog();
+
+            return;
         }
 
         private static void SolveForward(List<Rule> rules, List<char> facts, char goal)
@@ -144,170 +174,61 @@ namespace Forward
             Console.WriteLine();
 
         }
+        
 
-        private static void SolveBackward(List<Rule> rules, List<char> facts, char goal)
+        private static bool Prove(List<Rule> rules, List<char> facts, char goal, string dirtyGoals = "", List<char> provedFacts = null, int depth = 0)
         {
-            Stack<string> messages = new Stack<string>();
-            rules.ForEach(r => r.used = State.Open);
-            var startingFacts = facts;
-            facts = new List<char>(facts);
-            Stack<List<Rule>> ruleState = new Stack<List<Rule>>();
-            ruleState.Push(new List<Rule>());
-            Stack<List<char>> goalState = new Stack<List<char>>();
-            goalState.Push(new List<char> { goal });
-            var currentRuleState = ruleState.Pop();
-            var currentGoalState = goalState.Pop();
-            try
-            {
-                while (currentGoalState.Count != 0)
-                {
-                    var newruleState = new List<List<Rule>>();
-                    var newgoalState = new List<List<char>>();
-                    foreach (var rule in rules)
-                    {
-                        if (currentRuleState.Contains(rule))
-                        {
-                            for (int i = 0; i < currentRuleState.Count; i++)
-                                Console.Write($" ");
-                            Console.WriteLine($"Skipping R{rules.IndexOf(rule)+1}. Already used.");
-                        }
-                        else
-                        {
-                            if (!currentGoalState.Contains(rule.product))
-                            {
-                                for (int i = 0; i < currentRuleState.Count; i++)
-                                    Console.Write($" ");
-                                Console.WriteLine($"Skipping R{rules.IndexOf(rule) + 1}. Goals don't contain rule product.");
-                            }
-                            else
-                            {
-                                var addGoal = new List<char>(currentGoalState);
-                                var addRule = new List<Rule>(currentRuleState);
-                                addGoal.Remove(rule.product);
-                                if (rule.recipe.All(r => facts.Contains(r)))
-                                {
-                                    //closed end
-                                    for (int i = 0; i < currentRuleState.Count; i++)
-                                        Console.Write($" ");
-                                    Console.WriteLine($"Using R{rules.IndexOf(rule) + 1}. No new goals.");
-                                }
-                                else
-                                {
-                                    addRule.Add(rule);
-                                    for (int i = 0; i < currentRuleState.Count; i++)
-                                        Console.Write($" ");
-                                    Console.Write($"Using R{rules.IndexOf(rule) + 1}. Adding goals: ");
-                                    foreach (var rec in rule.recipe.Where(r => !facts.Contains(r)))
-                                    {
-                                        addGoal.Add(rec);
-                                        Console.Write($"{rec} ");
-                                    }
-                                    Console.WriteLine();
-                                }
-                                newruleState.Add(addRule);
-                                newgoalState.Add(addGoal);
-                            }
-                        }
-                    }
-                    foreach (var r in newruleState.AsEnumerable().Reverse())
-                        ruleState.Push(r);
-                    foreach (var g in newgoalState.AsEnumerable().Reverse())
-                        goalState.Push(g);
+            var goalID = $"{goal}_{goalsNodeId[goal]++}";
+            wr.WriteLine($"{goalID} [dir=back]");
+            wr.WriteLine($"{ goalID} [label=\"{goal}\" shape=square]");
 
-                    currentRuleState = ruleState.Pop();
-                    currentGoalState = goalState.Pop();
-                }
-            } catch (InvalidOperationException)
-            {
-                Console.WriteLine("Goal is unreachable, none of the rules moved forward");
 
+            provedFacts = provedFacts ?? new List<char>();
+            if (dirtyGoals.Contains(goal))
+            {
+                Console.WriteLine(new string(' ', depth)+"Cycle detected");
+                wr.WriteLine($"{ goalID} [fillcolor=\"#ffff00\" style=filled]");
+                return false;
             }
-            Console.Write($"Goal '{goal}' reached.");
-            foreach (var r in currentRuleState)
-                Console.Write($" R{rules.IndexOf(r) + 1}");
-            Console.WriteLine();
-        }
-
-        private static void SolveBackward1(List<Rule> rules, List<char> facts, char goal)
-        {
-            string f = "";
-            foreach (var ff in facts)
+            if (facts.Contains(goal))
             {
-                f += ff;
+                Console.WriteLine(new string(' ', depth)+$"Original facts contain goal {goal}");
+                wr.WriteLine($"{ goalID} [fillcolor=\"#00ff00\" style=filled]");
+                return true;
             }
-            Stack<Tuple<int,//next rule number
-                string,//goals
-                string,//completedGoals
-                List<Rule>//rules used
-                ,string//completed facts
-                >> stack = new Stack<Tuple<int, string, string, List<Rule>,string>>();
-            stack.Push(new Tuple<int, string, string, List<Rule>,string>(0, $"{goal}", f, new List<Rule>(),f));
-            Tuple<int, string, string, List<Rule>,string> state;
-            state = stack.Pop();
-            try{ while (true)
-            {
-                foreach (var s in stack)
-                {
-                    Console.Write(" ");
-                }
-                Console.Write($"R{ state.Item1 + 1} ");
-                var rule = rules[state.Item1];
-                if (state.Item1 < rules.Count - 1)
-                {
-                    stack.Push(incCopy(state));
-                }
+            if (provedFacts.Contains(goal)) {
+                Console.WriteLine(new string(' ', depth)+$"Proved facts contain goal {goal}");
+                return true;
+            }
+            var selectedRule = rules.FirstOrDefault(rule => {
+                var ruleID = $"R{ rules.IndexOf(rule) + 1}_{rulesNodeId[rules.IndexOf(rule)]++}";
+                wr.WriteLine($"{goalID} -> {ruleID} [dir=back]");
+                wr.WriteLine($"{ruleID} [label=\"R{rules.IndexOf(rule) + 1}\" shape=circle]");
 
 
-                if (isValid(rule, state))
-                {
-                    Console.Write("using");
+                Console.WriteLine(new string(' ', depth)+(rule.product == goal ? "Trying" : "Skipping") + $" rule R{rules.IndexOf(rule) + 1}");
 
-                    var newState = apply(rule, state);
 
-                    state = newState;
-
-                    stack.Push(newState);
-                }
+                var result = rule.product == goal && rule.recipe.All(r => {
+                    wr.Write($"{ruleID} -> ");
+                    return Prove(rules, facts, r, dirtyGoals + goal, provedFacts, depth + 1);
+                    });
+                if (!result)
+                    wr.WriteLine($"{ruleID} [fillcolor=red style=filled]");
                 else
-                {
-                    Console.Write("skipping");
-                }
+                    pa.Add(rules.IndexOf(rule) + 1);
+                return result;
 
-                Console.Write($" Goals: {state.Item2} Completed: {state.Item5} Rules:");
-                foreach (var item in state.Item4)
-                {
-                    Console.Write($"R{rules.IndexOf(item) + 1} ");
-                }
-                Console.WriteLine("\t\t"+rule);
-                if (state.Item2 == "")
-                    break;
-                state = stack.Pop();
-            } }
-            catch (InvalidOperationException)
+                });
+            if (selectedRule == null)
             {
-                Console.WriteLine("Goal is unreachable");
+                Console.WriteLine(new string(' ', depth) + $"All rules exhausted FAIL");
+                wr.WriteLine($"{ goalID} [fillcolor=red style=filled]");
+                return false;
             }
-        }
-
-        private static Tuple<int, string, string, List<Rule>,string> incCopy(Tuple<int, string, string, List<Rule>,string> state)
-        {
-            return new Tuple<int, string, string, List<Rule>, string>(state.Item1 + 1, state.Item2, state.Item3, new List<Rule>(state.Item4), state.Item5);
-        }
-        private static Tuple<int, string, string, List<Rule>, string> apply(Rule rule, Tuple<int, string, string, List<Rule>, string> state)
-        {
-            var completedGoals = state.Item3;// + rule.product;
-            var goals = state.Item2.Replace("" + rule.product, "");
-            foreach (var r in rule.recipe.Where(r=> !completedGoals.Contains(r)))
-            {
-                goals += r;
-            }
-            var rules = new List<Rule>(state.Item4);rules.Add(rule);
-            return new Tuple<int, string, string, List<Rule>, string>(0,goals, completedGoals, rules, state.Item5+rule.product);
-        }
-
-        private static bool isValid(Rule rule, Tuple<int, string, string, List<Rule>, string> state)
-        {
-            return state.Item2.Contains(rule.product) && !state.Item4.Contains(rule) && !state.Item4.Contains(rule);// && !state.Item3.Contains(rule.product);
+            Console.WriteLine(new string(' ', depth)+$"Proved new fact {goal}");
+            provedFacts.Add(selectedRule.product);
+            return true;
         }
     }
 
