@@ -12,3 +12,10 @@ C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.csprojAssemblyRef
 C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.csproj.CoreCompileInputs.cache
 C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.exe
 C:\Saulius\Programavimas\7sem\AiForw\Forward\obj\Debug\Forward.pdb
+C:\Saulius\school\Ai\cyrasAi\Forward\bin\Debug\Forward.exe.config
+C:\Saulius\school\Ai\cyrasAi\Forward\bin\Debug\Forward.exe
+C:\Saulius\school\Ai\cyrasAi\Forward\bin\Debug\Forward.pdb
+C:\Saulius\school\Ai\cyrasAi\Forward\obj\Debug\Forward.csprojAssemblyReference.cache
+C:\Saulius\school\Ai\cyrasAi\Forward\obj\Debug\Forward.csproj.CoreCompileInputs.cache
+C:\Saulius\school\Ai\cyrasAi\Forward\obj\Debug\Forward.exe
+C:\Saulius\school\Ai\cyrasAi\Forward\obj\Debug\Forward.pdb
