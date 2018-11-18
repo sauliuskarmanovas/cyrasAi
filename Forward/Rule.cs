@@ -16,7 +16,7 @@ namespace Forward
             string s = "";
             foreach (var item in recipe)
             {
-                s += $"'{item}'->";
+                s += $"'{item}'" + (recipe.Last() == item?"->":",");
             }
             return s += $"'{product}'";
         }

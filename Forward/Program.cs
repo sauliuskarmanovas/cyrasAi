@@ -77,7 +77,7 @@ namespace Forward
 
             using (wr = new StreamWriter("gr.txt"))
             {
-                wr.Write(@"digraph a{");
+                wr.Write(@"digraph a{rankdir=RL;");
                 if(Prove(rules, facts, goal))
                 {
                     Console.WriteLine("Goal was proved");
@@ -186,35 +186,46 @@ namespace Forward
             provedFacts = provedFacts ?? new List<char>();
             if (dirtyGoals.Contains(goal))
             {
-                Console.WriteLine(new string(' ', depth)+"Cycle detected");
+                Console.WriteLine(new string(' ', depth * 2) + $"Current goal: {goal}. " + "Cycle detected");
                 wr.WriteLine($"{ goalID} [fillcolor=\"#ffff00\" style=filled]");
                 return false;
             }
             if (facts.Contains(goal))
             {
-                Console.WriteLine(new string(' ', depth)+$"Original facts contain goal {goal}");
+                Console.WriteLine(new string(' ', depth * 2) + $"Current goal: {goal}. " + $"Original facts contain goal {goal}");
                 wr.WriteLine($"{ goalID} [fillcolor=\"#00ff00\" style=filled]");
                 return true;
             }
             if (provedFacts.Contains(goal)) {
-                Console.WriteLine(new string(' ', depth)+$"Proved facts contain goal {goal}");
+                Console.WriteLine(new string(' ', depth * 2) + $"Current goal: {goal}. " + $"Proved facts contain goal {goal}");
                 return true;
             }
             var selectedRule = rules.FirstOrDefault(rule => {
                 var ruleID = $"R{ rules.IndexOf(rule) + 1}_{rulesNodeId[rules.IndexOf(rule)]++}";
-                wr.WriteLine($"{goalID} -> {ruleID} [dir=back]");
-                wr.WriteLine($"{ruleID} [label=\"R{rules.IndexOf(rule) + 1}\" shape=circle]");
+                if(rule.product == goal)
+                {
+                    wr.WriteLine($"{goalID} -> {ruleID} [dir=back]");
+                    wr.WriteLine($"{ruleID} [label=\"R{rules.IndexOf(rule) + 1}\" shape=circle]");
+                }
 
-
-                Console.WriteLine(new string(' ', depth)+(rule.product == goal ? "Trying" : "Skipping") + $" rule R{rules.IndexOf(rule) + 1}");
-
-
+                Console.Write(new string(' ', depth * 2)+$"Current goal: {goal}. "+(rule.product == goal ? "Trying" : "Skipping") 
+                    + $" rule R{rules.IndexOf(rule) + 1}: {rule}.");
+                Console.WriteLine(rule.product == goal ? $" New goals: {new string(rule.recipe.ToArray())}" : "");
+                var pfCount = provedFacts.Count();
+                var prCount = pa.Count();
                 var result = rule.product == goal && rule.recipe.All(r => {
                     wr.Write($"{ruleID} -> ");
                     return Prove(rules, facts, r, dirtyGoals + goal, provedFacts, depth + 1);
                     });
                 if (!result)
-                    wr.WriteLine($"{ruleID} [fillcolor=red style=filled]");
+                {
+                    while (pfCount != provedFacts.Count)
+                        provedFacts.RemoveAt(provedFacts.Count - 1);
+                    while (prCount != pa.Count)
+                        pa.RemoveAt(pa.Count - 1);
+                    if(rule.product == goal)
+                        wr.WriteLine($"{ruleID} [fillcolor=red style=filled]");
+                }
                 else
                     pa.Add(rules.IndexOf(rule) + 1);
                 return result;
@@ -222,11 +233,11 @@ namespace Forward
                 });
             if (selectedRule == null)
             {
-                Console.WriteLine(new string(' ', depth) + $"All rules exhausted FAIL");
+                Console.WriteLine(new string(' ', depth * 2) + $"Current goal: {goal}. " + $"All rules exhausted FAIL");
                 wr.WriteLine($"{ goalID} [fillcolor=red style=filled]");
                 return false;
             }
-            Console.WriteLine(new string(' ', depth)+$"Proved new fact {goal}");
+            Console.WriteLine(new string(' ', depth * 2) + $"Current goal: {goal}. " + $"Proved new fact {goal}");
             provedFacts.Add(selectedRule.product);
             return true;
         }
