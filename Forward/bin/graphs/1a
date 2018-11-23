@@ -1,0 +1,16 @@
+digraph a {
+rankdir=LR
+i0 [label="A\nB\nC\n"]
+i1 [label="A\nB\nC\nL"]
+i2 [label="A\nB\nC\nL\nK"]
+i3 [label="A\nB\nC\nL\nK\nD"]
+i4 [label="A\nB\nC\nL\nK\nD\nM"]
+i5 [label="A\nB\nC\nL\nK\nD\nM\nF"]
+i6 [label="A\nB\nC\nL\nK\nD\nM\nF\nZ"]
+i0 -> i1 [label= "R1"]
+i1 -> i2 [label= "R2"]
+i2 -> i3 [label= "R7"]
+i3 -> i4 [label= "R4"]
+i4 -> i5 [label= "R6"]
+i5 -> i6 [label= "R5"]
+}

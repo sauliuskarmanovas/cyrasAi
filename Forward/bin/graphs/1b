@@ -1,0 +1,10 @@
+digraph a{
+"A"->"L" [label="R1"]
+"L"->"K" [label="R2"]
+"D"->"M" [label="R4"]
+"B"->"Z" [label="R5"]
+"F"->"Z" [label="R5"]
+"D"->"F" [label="R6"]
+"C"->"F" [label="R6"]
+"A"->"D" [label="R7"]
+}

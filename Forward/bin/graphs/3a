@@ -1,0 +1,8 @@
+digraph a{
+rankdir=LR
+"D"->"Z" [label="R1"]
+"C"->"D" [label="R2"]
+"B"->"C" [label="R3"]
+"A"->"B" [label="R4"]
+
+}

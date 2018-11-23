@@ -1,0 +1,5 @@
+digraph a{
+"A"->"A\nG" [label="R2"]
+"A\nG"->"A\nG\nZ" [label="R1"]
+rankdir=LR
+}
